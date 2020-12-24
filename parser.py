@@ -33,10 +33,10 @@ grammar = r"""
     ?test: expr
     ?expr: or_expr
     ?or_expr: (and_expr "||")* and_expr
-    ?and_expr: (not_expr "&&")* not_expr
-    ?not_expr: "--" comparison -> not_expr
-        | comparison
-    ?comparison: add_expr (_comp_op add_expr)*
+    ?and_expr: (comparison "&&")* comparison
+    ?comparison: not_expr (_comp_op not_expr)*
+    ?not_expr: "--" add_expr -> not_expr
+        | add_expr
     ?add_expr: mul_expr (_add_op mul_expr)*
     ?mul_expr: factor (_mul_op factor)*
     ?factor: _factor_op factor | power
