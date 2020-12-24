@@ -24,9 +24,11 @@ grammar = r"""
     return_stmt: "return" test
     
     ?compound_stmt: if_stmt | while_stmt | funcdef
-    if_stmt: "if" test ":" suite ("elif" test ":" suite)* ["else" ":" suite]
+    if_stmt: "if" test ":" if_suite ["else" ":" else_suite]
     while_stmt: "while" test ":" suite ["else" ":" suite]
     suite: simple_stmt | _NEWLINE _INDENT stmt+ _DEDENT
+    if_suite: simple_stmt | _NEWLINE _INDENT stmt+ _DEDENT
+    else_suite: simple_stmt | _NEWLINE _INDENT stmt+ _DEDENT
     
     ?test: expr
     ?expr: or_expr
