@@ -1,7 +1,15 @@
+import sys
+
 from lark import Lark
 from lark.indenter import Indenter
 from lark.tree import pydot__tree_to_png
 
+try:
+    input_file = sys.argv[1]
+    output_file = sys.argv[2]
+except IndexError:
+    print("Введите название входного и выходного файла.")
+    exit(0)
 
 grammar = r"""
     single_input: _NEWLINE | simple_stmt | compound_stmt _NEWLINE
@@ -90,17 +98,14 @@ class PythonIndenter(Indenter):
     DEDENT_type = '_DEDENT'
     tab_len = 4
 
+
 p = Lark(grammar, parser='lalr', postlex=PythonIndenter())
 
-with open("input.txt", "r") as file:
-    try:
-        code = file.read()
-        tree = p.parse(code)
-        pydot__tree_to_png(tree, "input.png")
-    except Exception as e:
-        print(f"Parse error! {e}")
-
-
-
-
-
+if __name__ == '__main__':
+    with open(input_file, "r") as file:
+        try:
+            code = file.read()
+            tree = p.parse(code)
+            pydot__tree_to_png(tree, output_file)
+        except Exception as e:
+            print(f"Parse error! {e}")
