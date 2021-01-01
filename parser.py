@@ -1,8 +1,9 @@
 import sys
 
-from lark import Lark
+from lark import Lark, Transformer
 from lark.indenter import Indenter
 from lark.tree import pydot__tree_to_png
+from lark.visitors import v_args, Discard
 
 try:
     input_file = sys.argv[1]
@@ -12,7 +13,6 @@ except IndexError:
     exit(0)
 
 grammar = r"""
-    single_input: _NEWLINE | simple_stmt | compound_stmt _NEWLINE
     start: (_NEWLINE | stmt)*
     
     funcdef: "def" NAME "(" parameters? ")" ":" suite
@@ -22,7 +22,7 @@ grammar = r"""
     ?paramvalue: NAME
     
     ?stmt: simple_stmt | compound_stmt
-    ?simple_stmt: small_stmt (";" small_stmt)* [";"] _NEWLINE
+    ?simple_stmt: small_stmt _NEWLINE
     ?small_stmt: (expr_stmt | pass_stmt | flow_stmt)
     ?expr_stmt: test (annassign | ("=" (test))*)
     annassign: ":" test ["=" test]
@@ -33,10 +33,10 @@ grammar = r"""
     
     ?compound_stmt: if_stmt | while_stmt | funcdef
     if_stmt: "if" test ":" if_suite ["else" ":" else_suite]
-    while_stmt: "while" test ":" suite ["else" ":" suite]
-    suite: simple_stmt | _NEWLINE _INDENT stmt+ _DEDENT
-    if_suite: simple_stmt | _NEWLINE _INDENT stmt+ _DEDENT
-    else_suite: simple_stmt | _NEWLINE _INDENT stmt+ _DEDENT
+    while_stmt: "while" test ":" suite
+    suite: _NEWLINE _INDENT stmt+ _DEDENT
+    if_suite: _NEWLINE _INDENT stmt+ _DEDENT
+    else_suite: _NEWLINE _INDENT stmt+ _DEDENT
     
     ?test: expr
     ?expr: or_expr
@@ -99,6 +99,29 @@ class PythonIndenter(Indenter):
     tab_len = 4
 
 
+class RemovePassStatement(Transformer):
+    @v_args(tree=True)
+    def suite(self, tree):
+        tree.children = list(filter(lambda tree: tree.data != "pass_stmt", tree.children))
+        if not len(tree.children):
+            raise Discard
+        return tree
+
+    @v_args(tree=True)
+    def if_suite(self, tree):
+        tree.children = list(filter(lambda tree: tree.data != "pass_stmt", tree.children))
+        if not len(tree.children):
+            raise Discard
+        return tree
+
+    @v_args(tree=True)
+    def else_suite(self, tree):
+        tree.children = list(filter(lambda tree: tree.data != "pass_stmt", tree.children))
+        if not len(tree.children):
+            raise Discard
+        return tree
+
+
 p = Lark(grammar, parser='lalr', postlex=PythonIndenter())
 
 if __name__ == '__main__':
@@ -106,6 +129,7 @@ if __name__ == '__main__':
         try:
             code = file.read()
             tree = p.parse(code)
+            tree = RemovePassStatement().transform(tree)
             pydot__tree_to_png(tree, output_file)
         except Exception as e:
             print(f"Parse error! {e}")

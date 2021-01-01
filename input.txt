@@ -13,3 +13,10 @@ def test(text_strint):
 
     while 123 || --321 >= i:
         i = i - 1
+
+def test_pass():
+    pass
+
+def test_if():
+    if a > b:
+        return a
